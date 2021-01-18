@@ -1,10 +1,9 @@
 #include <Ambient.h>
 #include <M5Stack.h>
+#include <SparkFun_SCD30_Arduino_Library.h>
 #include <WiFi.h>
 #include <WiFiClientSecure.h>
 #include <Wire.h>
-
-#include "SparkFun_SCD30_Arduino_Library.h"
 
 #define USE_EXTERNAL_SD_FOR_CONFIG
 // comment out USE_EXTERNAL_SD_FOR_CONFIG if you write config directly, and define config you use
@@ -54,8 +53,8 @@ SCD30 airSensor;
 #define UPLOAD_INTERVAL_S 60  // upload data to Ambient every UPLOAD_INTERVAL_S [s]
 
 // TFT setting
-#define TFT_WIDTH 320
-#define TFT_HEIGHT 240
+#define MYTFT_WIDTH 320
+#define MYTFT_HEIGHT 240
 #define SPRITE_WIDTH 320
 #define SPRITE_HEIGHT 160
 
@@ -112,8 +111,11 @@ bool pushbullet(const String &message) {
     return false;
 }
 
+int getPositionY(int ppm) {
+    return SPRITE_HEIGHT - (int32_t)((float)SPRITE_HEIGHT / (CO2_MAX_PPM - CO2_MIN_PPM) * ppm);
+}
+
 bool notifyUser(int level) {
-    const char *title = "CO2 Monitor";
     char body[100];
 
     switch (level) {
@@ -288,12 +290,8 @@ void setup() {
     graph_co2.fillRect(0, 0, SPRITE_WIDTH, p_war + 1, getColor(50, 0, 0));
 
     spr_values.setColorDepth(8);
-    spr_values.createSprite(SPRITE_WIDTH, TFT_HEIGHT - SPRITE_HEIGHT);
+    spr_values.createSprite(SPRITE_WIDTH, MYTFT_HEIGHT - SPRITE_HEIGHT);
     spr_values.fillSprite(TFT_BLACK);
-}
-
-int getPositionY(int ppm) {
-    return SPRITE_HEIGHT - (int32_t)((float)SPRITE_HEIGHT / (CO2_MAX_PPM - CO2_MIN_PPM) * ppm);
 }
 
 void updateDisplay() {
@@ -327,7 +325,7 @@ void updateDisplay() {
 
     // update
     spr_values.pushSprite(0, 0);
-    graph_co2.pushSprite(0, TFT_HEIGHT - SPRITE_HEIGHT);
+    graph_co2.pushSprite(0, MYTFT_HEIGHT - SPRITE_HEIGHT);
     graph_co2.scroll(-1, 0);
 }
 
