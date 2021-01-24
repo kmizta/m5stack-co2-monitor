@@ -49,8 +49,9 @@ String pushbullet_apikey;
 
 // sensor setting
 SCD30 airSensor;
-#define SENSOR_INTERVAL_S 2   // get sensor value every SENSOR_INTERVAL_S [s]
-#define UPLOAD_INTERVAL_S 60  // upload data to Ambient every UPLOAD_INTERVAL_S [s]
+#define SENSOR_INTERVAL_S 2    // get sensor value every SENSOR_INTERVAL_S [s]
+#define UPLOAD_INTERVAL_S 60   // upload data to Ambient every UPLOAD_INTERVAL_S [s]
+#define BTNCHK_INTERVAL_S 0.1  // M5Stack Button check interval [s]
 
 // TFT setting
 #define MYTFT_WIDTH 320
@@ -58,13 +59,17 @@ SCD30 airSensor;
 #define SPRITE_WIDTH 320
 #define SPRITE_HEIGHT 160
 
-// CO2 level setting
+// CO2 level default setting
+#define CO2_MAX_RANGE 40000
 #define CO2_MIN_PPM 0
-#define CO2_MAX_PPM 2500
-#define CO2_RANGE_INT 500
-#define CO2_CAUTION_PPM 1000
-#define CO2_WARNING_PPM 2000
+#define CO2_MAX_PPM_DEFAULT 2500
+#define CO2_CAUTION_PPM_DEFAULT 1000
+#define CO2_WARNING_PPM_DEFAULT 2000
 #define CO2_HYSTERESIS_PPM 100
+#define CO2_SET_DELTA 100
+unsigned int co2_max_ppm = CO2_MAX_PPM_DEFAULT;
+unsigned int co2_caution_ppm = CO2_CAUTION_PPM_DEFAULT;
+unsigned int co2_warning_ppm = CO2_WARNING_PPM_DEFAULT;
 
 enum {
     LEVEL_NORMAL,
@@ -112,7 +117,7 @@ bool pushbullet(const String &message) {
 }
 
 int getPositionY(int ppm) {
-    return SPRITE_HEIGHT - (int32_t)((float)SPRITE_HEIGHT / (CO2_MAX_PPM - CO2_MIN_PPM) * ppm);
+    return SPRITE_HEIGHT - (int32_t)((float)SPRITE_HEIGHT / (co2_max_ppm - CO2_MIN_PPM) * ppm);
 }
 
 bool notifyUser(int level) {
@@ -120,11 +125,11 @@ bool notifyUser(int level) {
 
     switch (level) {
         case LEVEL_CAUTION:
-            sprintf(body, "CO2 exceeded %d ppm. Ventilate please.", CO2_CAUTION_PPM);
+            sprintf(body, "CO2 exceeded %d ppm. Ventilate please.", co2_caution_ppm);
             return pushbullet(body);
 
         case LEVEL_WARNING:
-            sprintf(body, "CO2 exceeded %d ppm. Ventilate immediately.", CO2_WARNING_PPM);
+            sprintf(body, "CO2 exceeded %d ppm. Ventilate immediately.", co2_warning_ppm);
             return pushbullet(body);
 
         default:
@@ -188,7 +193,7 @@ void setup_with_external_SD() {
         use_ambient = true;
         config_ini = config_ini.substring(config_ini.indexOf("#AMBIENT_CH_ID\r\n") + 16);
         ambient_ch_id = config_ini.substring(0, config_ini.indexOf("\r\n"));
-        Serial.printf("Ambient ch ID:%d\n", ambient_ch_id.toInt());
+        Serial.printf("Ambient ch ID:%ld\n", ambient_ch_id.toInt());
         config_ini = config_ini.substring(config_ini.indexOf("#AMBIENT_WRITEKEY\r\n") + 19);
         ambient_writekey = config_ini.substring(0, config_ini.indexOf("\r\n"));
         Serial.printf("Ambient write key:%s\n", ambient_writekey.c_str());
@@ -213,8 +218,8 @@ void setup_with_external_SD() {
 }
 
 void setup() {
-    p_cau = getPositionY(CO2_CAUTION_PPM);
-    p_war = getPositionY(CO2_WARNING_PPM);
+    p_cau = getPositionY(co2_caution_ppm);
+    p_war = getPositionY(co2_warning_ppm);
 
     M5.begin();
     M5.Power.begin();
@@ -300,9 +305,9 @@ void updateDisplay() {
     spr_values.setCursor(0, 0);
     spr_values.setTextSize(3);
     spr_values.fillSprite(TFT_BLACK);
-    if (co2_ppm < CO2_CAUTION_PPM)
+    if (co2_ppm < co2_caution_ppm)
         spr_values.setTextColor(TFT_WHITE);
-    else if (co2_ppm < CO2_WARNING_PPM)
+    else if (co2_ppm < co2_warning_ppm)
         spr_values.setTextColor(TFT_YELLOW);
     else
         spr_values.setTextColor(TFT_RED);
@@ -312,6 +317,8 @@ void updateDisplay() {
     spr_values.printf("Humid:%4.1f %%\n", humidity_p);
 
     // draw lines
+    p_cau = getPositionY(co2_caution_ppm);
+    p_war = getPositionY(co2_warning_ppm);
     graph_co2.drawFastVLine(SPRITE_WIDTH - 1, 0, p_war + 1, getColor(50, 0, 0));
     graph_co2.drawFastVLine(SPRITE_WIDTH - 1, p_war + 1, p_cau - p_war, getColor(50, 50, 0));
 
@@ -339,7 +346,7 @@ int checkCo2Level(int level, int co2_ppm) {
 
     switch (level) {
         case LEVEL_NORMAL:
-            if (co2_ppm > CO2_CAUTION_PPM) {
+            if (co2_ppm > co2_caution_ppm) {
                 over_thre_timer_cau += SENSOR_INTERVAL_S;
                 if (over_thre_timer_cau > NOTIFY_TIMER_S) {
                     over_thre_timer_cau = 0;
@@ -350,7 +357,7 @@ int checkCo2Level(int level, int co2_ppm) {
             break;
 
         case LEVEL_CAUTION:
-            if (co2_ppm > CO2_WARNING_PPM) {
+            if (co2_ppm > co2_warning_ppm) {
                 over_thre_timer_war += SENSOR_INTERVAL_S;
                 if (over_thre_timer_war > NOTIFY_TIMER_S) {
                     over_thre_timer_war = 0;
@@ -358,12 +365,12 @@ int checkCo2Level(int level, int co2_ppm) {
                 }
             } else
                 over_thre_timer_war = 0;
-            if (co2_ppm < (CO2_CAUTION_PPM - CO2_HYSTERESIS_PPM))
+            if (co2_ppm < (co2_caution_ppm - CO2_HYSTERESIS_PPM))
                 return LEVEL_NORMAL;
             break;
 
         case LEVEL_WARNING:
-            if (co2_ppm < (CO2_WARNING_PPM - CO2_HYSTERESIS_PPM))
+            if (co2_ppm < (co2_warning_ppm - CO2_HYSTERESIS_PPM))
                 return LEVEL_CAUTION;
             break;
 
@@ -372,6 +379,112 @@ int checkCo2Level(int level, int co2_ppm) {
     }
 
     return level;
+}
+
+void incrementValue(int selected, int delta) {
+    switch (selected) {
+        case 0:
+            if (co2_max_ppm < CO2_MAX_RANGE)
+                co2_max_ppm += delta;
+            break;
+
+        case 1:
+            if (co2_warning_ppm < co2_max_ppm)
+                co2_warning_ppm += delta;
+            break;
+
+        case 2:
+            if (co2_caution_ppm < co2_warning_ppm)
+                co2_caution_ppm += delta;
+            break;
+
+        default:
+            break;
+    }
+}
+
+void decrementValue(int selected, int delta) {
+    switch (selected) {
+        case 0:
+            if (co2_warning_ppm < co2_max_ppm)
+                co2_max_ppm -= delta;
+            break;
+
+        case 1:
+            if (co2_caution_ppm < co2_warning_ppm)
+                co2_warning_ppm -= delta;
+            break;
+
+        case 2:
+            if (CO2_MIN_PPM < co2_caution_ppm)
+                co2_caution_ppm -= delta;
+            break;
+
+        default:
+            break;
+    }
+}
+
+void showSetting() {
+    int selected = 0;
+    while (selected < 3) {
+        M5.Lcd.clear();
+        M5.Lcd.setCursor(0, 80);
+        M5.Lcd.println("  Setting");
+        if (selected == 0)
+            M5.Lcd.print("> ");
+        else
+            M5.Lcd.print("  ");
+        M5.Lcd.printf("Max    :%5d [ppm]\n", co2_max_ppm);
+        if (selected == 1)
+            M5.Lcd.print("> ");
+        else
+            M5.Lcd.print("  ");
+        M5.Lcd.setTextColor(TFT_RED);
+        M5.Lcd.printf("Warning:%5d [ppm]\n", co2_warning_ppm);
+        M5.Lcd.setTextColor(TFT_WHITE);
+        if (selected == 2)
+            M5.Lcd.print("> ");
+        else
+            M5.Lcd.print("  ");
+        M5.Lcd.setTextColor(TFT_YELLOW);
+        M5.Lcd.printf("Caution:%5d [ppm]\n", co2_caution_ppm);
+        M5.Lcd.setTextColor(TFT_WHITE);
+
+        while (1) {
+            M5.update();
+            if (M5.BtnA.wasPressed()) {
+                decrementValue(selected, CO2_SET_DELTA);
+                break;
+            }
+            if (M5.BtnA.pressedFor(600)) {
+                decrementValue(selected, CO2_SET_DELTA);
+                break;
+            }
+            if (M5.BtnB.wasPressed()) {
+                selected++;
+                break;
+            }
+            if (M5.BtnC.wasPressed()) {
+                incrementValue(selected, CO2_SET_DELTA);
+                break;
+            }
+            if (M5.BtnC.pressedFor(600)) {
+                incrementValue(selected, CO2_SET_DELTA);
+                break;
+            }
+            delay(100);
+        }
+    }
+}
+
+void resetGraphSprite() {
+    p_cau = getPositionY(co2_caution_ppm);
+    p_war = getPositionY(co2_warning_ppm);
+    graph_co2.fillSprite(TFT_BLACK);
+    graph_co2.fillRect(0, 0, SPRITE_WIDTH, p_cau + 1, getColor(50, 50, 0));
+    graph_co2.fillRect(0, 0, SPRITE_WIDTH, p_war + 1, getColor(50, 0, 0));
+    graph_co2.pushSprite(0, MYTFT_HEIGHT - SPRITE_HEIGHT);
 }
 
 void loop() {
@@ -418,7 +531,15 @@ void loop() {
         Serial.println("Waiting for new data");
     }
 
-    delay(SENSOR_INTERVAL_S * 1000);
+    for (int i = 0; i < (float)SENSOR_INTERVAL_S / (float)BTNCHK_INTERVAL_S; ++i) {
+        M5.update();
+        if (M5.BtnA.wasPressed() || M5.BtnB.wasPressed() || M5.BtnC.wasPressed()) {
+            showSetting();
+            resetGraphSprite();
+            break;
+        }
+        delay(BTNCHK_INTERVAL_S * 1000);
+    }
 
     if (use_ambient) {
         elapsed_time += SENSOR_INTERVAL_S;
