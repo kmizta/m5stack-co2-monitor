@@ -23,7 +23,17 @@ Option
 以下のブログを参照ください。
 
 [換気のすゝめ　～M5StackでCO2濃度モニタを作る～](https://westgate-lab.hatenablog.com/entry/2020/04/01/224511)
- 
+
+また、co2monitor.inoと同じディレクトリにenvs.hを作成し、以下のように各種定数を定義してください。（ver.2のみ）
+```
+#define WIFI_SSID "YOUR SSID"
+#define WIFI_PASSWORD "YOUR PASSWORD"
+#define AMBIENT_CHID 11111
+#define AMBIENT_WRITEKEY "YOUR WRITE KEY"
+#define PB_APIKEY "YOUR PUSHBULLET API KEY"
+```
+もしWifiやAmbient、Pushbulletを使用しない場合は、空のenvs.hを作成しco2monitor.ino中の#define USE_AMBIENTおよび#define USE_PUSHBULLETをコメントアウトしてください。
+
 # Author
  
 [![Twitter URL](https://img.shields.io/twitter/url/https/twitter.com/kmizta.svg?style=social&label=Follow%20%40kmizta)](https://twitter.com/kmizta)
