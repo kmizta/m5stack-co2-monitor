@@ -66,11 +66,16 @@ SCD30 airSensor;
 #define CO2_MAX_PPM_DEFAULT 2500
 #define CO2_CAUTION_PPM_DEFAULT 1000
 #define CO2_WARNING_PPM_DEFAULT 2000
+#define TEMPERATURE_OFFSET_MAX 99.9
+#define TEMPERATURE_OFFSET_MIN -99.9
 #define CO2_HYSTERESIS_PPM 100
 #define CO2_SET_DELTA 100
+#define TEMPERATURE_SET_DELTA 0.1
+#define CO2_CALIBRATION_FACTOR 400  // outside fresh air
 int co2_max_ppm;
 int co2_caution_ppm;
 int co2_warning_ppm;
+float temperature_offset;
 
 // Preferences define
 Preferences preferences;
@@ -324,6 +329,13 @@ void setup() {
     spr_values.setColorDepth(8);
     spr_values.createSprite(SPRITE_WIDTH, MYTFT_HEIGHT - SPRITE_HEIGHT);
     spr_values.fillSprite(TFT_BLACK);
+
+    // get setting
+    //Read temperature offset
+    temperature_offset = airSensor.getTemperatureOffset();
+    Serial.print("Current temp offset: ");
+    Serial.print(temperature_offset, 2);
+    Serial.println("C");
 }
 
 void updateDisplay() {
@@ -340,7 +352,7 @@ void updateDisplay() {
         spr_values.setTextColor(TFT_RED);
     spr_values.printf("CO2:  %4d ppm\n", co2_ppm);
     spr_values.setTextColor(TFT_WHITE);
-    spr_values.printf("Temp: %4.1f deg\n", temperature_c);
+    spr_values.printf("Temp: %4.1f degC\n", temperature_c);
     spr_values.printf("Humid:%4.1f %%\n", humidity_p);
 
     // draw lines
@@ -408,21 +420,26 @@ int checkCo2Level(int level, int co2_ppm) {
     return level;
 }
 
-void incrementValue(int selected, int delta) {
+void incrementValue(int selected, float delta) {
     switch (selected) {
         case 0:
             if (co2_max_ppm < CO2_MAX_RANGE)
-                co2_max_ppm += delta;
+                co2_max_ppm += (int)delta;
             break;
 
         case 1:
             if (co2_warning_ppm < co2_max_ppm)
-                co2_warning_ppm += delta;
+                co2_warning_ppm += (int)delta;
             break;
 
         case 2:
             if (co2_caution_ppm < co2_warning_ppm)
-                co2_caution_ppm += delta;
+                co2_caution_ppm += (int)delta;
+            break;
+
+        case 3:
+            if (temperature_offset < TEMPERATURE_OFFSET_MAX)
+                temperature_offset += delta;
             break;
 
         default:
@@ -430,74 +447,155 @@ void incrementValue(int selected, int delta) {
     }
 }
 
-void decrementValue(int selected, int delta) {
+void decrementValue(int selected, float delta) {
     switch (selected) {
         case 0:
             if (co2_warning_ppm < co2_max_ppm)
-                co2_max_ppm -= delta;
+                co2_max_ppm -= (int)delta;
             break;
 
         case 1:
             if (co2_caution_ppm < co2_warning_ppm)
-                co2_warning_ppm -= delta;
+                co2_warning_ppm -= (int)delta;
             break;
 
         case 2:
             if (CO2_MIN_PPM < co2_caution_ppm)
-                co2_caution_ppm -= delta;
+                co2_caution_ppm -= (int)delta;
+            break;
+
+        case 3:
+            if (TEMPERATURE_OFFSET_MIN < temperature_offset)
+                temperature_offset -= delta;
             break;
 
         default:
             break;
+    }
+}
+
+void calibrateCO2() {
+    int selected = 1;
+    while (1) {
+        M5.Lcd.clear();
+        M5.Lcd.setCursor(0, 0);
+        M5.Lcd.print("Are you sure you want to calibrate CO2?\n");
+        M5.Lcd.print("(expose to outside air for 2min before calibration)\n\n");
+        if (selected == 0)
+            M5.Lcd.print(">");
+        else
+            M5.Lcd.print(" ");
+        M5.Lcd.print("Yes  ");
+        if (selected == 1)
+            M5.Lcd.print(">");
+        else
+            M5.Lcd.print(" ");
+        M5.Lcd.print("No\n");
+
+        while (1) {
+            M5.update();
+            if (M5.BtnA.wasPressed()) {
+                selected = 0;
+                break;
+            }
+            if (M5.BtnB.wasPressed()) {
+                if (selected == 0) {
+                    if (airSensor.setForcedRecalibrationFactor(CO2_CALIBRATION_FACTOR)) {
+                        M5.Lcd.print("Calibration done!");
+                    } else {
+                        M5.Lcd.print("Calibration failed...");
+                    }
+                    delay(2000);
+                }
+                return;
+            }
+            if (M5.BtnC.wasPressed()) {
+                selected = 1;
+                break;
+            }
+            delay(100);
+        }
     }
 }
 
 void showSetting() {
     int selected = 0;
-    while (selected < 3) {
+    float delta;
+
+    temperature_offset = airSensor.getTemperatureOffset();
+
+    while (selected < 5) {
         M5.Lcd.clear();
-        M5.Lcd.setCursor(0, 80);
-        M5.Lcd.println("  Setting");
-        if (selected == 0)
+        M5.Lcd.setCursor(0, 0);
+
+        M5.Lcd.print("  Setting\n\n");
+
+        if (selected == 0) {
             M5.Lcd.print("> ");
-        else
+            delta = CO2_SET_DELTA;
+        } else
             M5.Lcd.print("  ");
         M5.Lcd.printf("Max    :%5d [ppm]\n", co2_max_ppm);
-        if (selected == 1)
+
+        if (selected == 1) {
             M5.Lcd.print("> ");
-        else
+            delta = CO2_SET_DELTA;
+        } else
             M5.Lcd.print("  ");
         M5.Lcd.setTextColor(TFT_RED);
         M5.Lcd.printf("Warning:%5d [ppm]\n", co2_warning_ppm);
         M5.Lcd.setTextColor(TFT_WHITE);
-        if (selected == 2)
+
+        if (selected == 2) {
             M5.Lcd.print("> ");
-        else
+            delta = CO2_SET_DELTA;
+        } else
             M5.Lcd.print("  ");
         M5.Lcd.setTextColor(TFT_YELLOW);
         M5.Lcd.printf("Caution:%5d [ppm]\n", co2_caution_ppm);
         M5.Lcd.setTextColor(TFT_WHITE);
 
+        if (selected == 3) {
+            M5.Lcd.print("> ");
+            delta = TEMPERATURE_SET_DELTA;
+        } else
+            M5.Lcd.print("  ");
+        M5.Lcd.printf("TempOfs:%5.1f [degC]\n", temperature_offset);
+
+        if (selected == 4) {
+            M5.Lcd.print("> ");
+            delta = 0;
+        } else
+            M5.Lcd.print("  ");
+        M5.Lcd.printf("CO2 Cal. (press Btn A/C)\n");
+
         while (1) {
             M5.update();
-            if (M5.BtnA.wasPressed()) {
-                decrementValue(selected, CO2_SET_DELTA);
-                break;
-            }
-            if (M5.BtnA.pressedFor(600)) {
-                decrementValue(selected, CO2_SET_DELTA);
-                break;
+            if (selected != 4) {
+                if (M5.BtnA.wasPressed()) {
+                    decrementValue(selected, delta);
+                    break;
+                }
+                if (M5.BtnA.pressedFor(600)) {
+                    decrementValue(selected, delta);
+                    break;
+                }
+                if (M5.BtnC.wasPressed()) {
+                    incrementValue(selected, delta);
+                    break;
+                }
+                if (M5.BtnC.pressedFor(600)) {
+                    incrementValue(selected, delta);
+                    break;
+                }
+            } else {
+                if (M5.BtnA.wasPressed() || M5.BtnC.wasPressed()) {
+                    calibrateCO2();
+                    break;
+                }
             }
             if (M5.BtnB.wasPressed()) {
                 selected++;
-                break;
-            }
-            if (M5.BtnC.wasPressed()) {
-                incrementValue(selected, CO2_SET_DELTA);
-                break;
-            }
-            if (M5.BtnC.pressedFor(600)) {
-                incrementValue(selected, CO2_SET_DELTA);
                 break;
             }
             delay(100);
@@ -511,6 +609,13 @@ void saveSetting() {
     preferences.putInt(KEY_CO2_WARNING, co2_warning_ppm);
     preferences.putInt(KEY_CO2_CAUTION, co2_caution_ppm);
     preferences.end();
+
+    // set temperature offset in SCD30 non-volatile memory
+    if (airSensor.setTemperatureOffset(temperature_offset)) {
+        Serial.println("setTemperatureOffset OK");
+    } else {
+        Serial.println("setTemperatureOffset NG");
+    }
 }
 
 void resetGraphSprite() {
