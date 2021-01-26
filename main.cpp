@@ -1,5 +1,6 @@
 #include <Ambient.h>
 #include <M5Stack.h>
+#include <Preferences.h>
 #include <SparkFun_SCD30_Arduino_Library.h>
 #include <WiFi.h>
 #include <WiFiClientSecure.h>
@@ -67,9 +68,16 @@ SCD30 airSensor;
 #define CO2_WARNING_PPM_DEFAULT 2000
 #define CO2_HYSTERESIS_PPM 100
 #define CO2_SET_DELTA 100
-unsigned int co2_max_ppm = CO2_MAX_PPM_DEFAULT;
-unsigned int co2_caution_ppm = CO2_CAUTION_PPM_DEFAULT;
-unsigned int co2_warning_ppm = CO2_WARNING_PPM_DEFAULT;
+int co2_max_ppm;
+int co2_caution_ppm;
+int co2_warning_ppm;
+
+// Preferences define
+Preferences preferences;
+#define PREF_NAMESPACE "co2-monitor"
+#define KEY_CO2_MAX "max"
+#define KEY_CO2_WARNING "war"
+#define KEY_CO2_CAUTION "cau"
 
 enum {
     LEVEL_NORMAL,
@@ -218,9 +226,6 @@ void setup_with_external_SD() {
 }
 
 void setup() {
-    p_cau = getPositionY(co2_caution_ppm);
-    p_war = getPositionY(co2_warning_ppm);
-
     M5.begin();
     M5.Power.begin();
     M5.Lcd.fillScreen(TFT_BLACK);
@@ -228,6 +233,26 @@ void setup() {
     M5.Lcd.setTextColor(TFT_WHITE, TFT_BLACK);
     M5.Lcd.setTextSize(2);
     Serial.begin(115200);
+
+    // read preferences
+    int v;
+    preferences.begin(PREF_NAMESPACE, false);
+    v = preferences.getInt(KEY_CO2_MAX, -1);
+    if (v == -1)
+        co2_max_ppm = CO2_MAX_PPM_DEFAULT;
+    else
+        co2_max_ppm = v;
+    v = preferences.getInt(KEY_CO2_WARNING, -1);
+    if (v == -1)
+        co2_warning_ppm = CO2_WARNING_PPM_DEFAULT;
+    else
+        co2_warning_ppm = v;
+    v = preferences.getInt(KEY_CO2_CAUTION, -1);
+    if (v == -1)
+        co2_caution_ppm = CO2_CAUTION_PPM_DEFAULT;
+    else
+        co2_caution_ppm = v;
+    preferences.end();
 
 #ifdef USE_EXTERNAL_SD_FOR_CONFIG
     M5.Lcd.println("Setup with external SD");
@@ -287,6 +312,8 @@ void setup() {
 
     delay(3000);
 
+    p_cau = getPositionY(co2_caution_ppm);
+    p_war = getPositionY(co2_warning_ppm);
     M5.Lcd.fillScreen(TFT_BLACK);
     graph_co2.setColorDepth(8);
     graph_co2.createSprite(SPRITE_WIDTH, SPRITE_HEIGHT);
@@ -478,6 +505,14 @@ void showSetting() {
     }
 }
 
+void saveSetting() {
+    preferences.begin(PREF_NAMESPACE, false);
+    preferences.putInt(KEY_CO2_MAX, co2_max_ppm);
+    preferences.putInt(KEY_CO2_WARNING, co2_warning_ppm);
+    preferences.putInt(KEY_CO2_CAUTION, co2_caution_ppm);
+    preferences.end();
+}
+
 void resetGraphSprite() {
     p_cau = getPositionY(co2_caution_ppm);
     p_war = getPositionY(co2_warning_ppm);
@@ -535,6 +570,7 @@ void loop() {
         M5.update();
         if (M5.BtnA.wasPressed() || M5.BtnB.wasPressed() || M5.BtnC.wasPressed()) {
             showSetting();
+            saveSetting();
             resetGraphSprite();
             break;
         }
