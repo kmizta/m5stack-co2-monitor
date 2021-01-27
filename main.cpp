@@ -66,16 +66,16 @@ SCD30 airSensor;
 #define CO2_MAX_PPM_DEFAULT 2500
 #define CO2_CAUTION_PPM_DEFAULT 1000
 #define CO2_WARNING_PPM_DEFAULT 2000
-#define TEMPERATURE_OFFSET_MAX 99.9
-#define TEMPERATURE_OFFSET_MIN -99.9
+#define TEMPERATURE_OFFSET_MAX 999
+#define TEMPERATURE_OFFSET_MIN 0
 #define CO2_HYSTERESIS_PPM 100
 #define CO2_SET_DELTA 100
-#define TEMPERATURE_SET_DELTA 0.1
+#define TEMPERATURE_SET_DELTA 1
 #define CO2_CALIBRATION_FACTOR 400  // outside fresh air
 int co2_max_ppm;
 int co2_caution_ppm;
 int co2_warning_ppm;
-float temperature_offset;
+int temperature_offsetx10;
 
 // Preferences define
 Preferences preferences;
@@ -329,13 +329,6 @@ void setup() {
     spr_values.setColorDepth(8);
     spr_values.createSprite(SPRITE_WIDTH, MYTFT_HEIGHT - SPRITE_HEIGHT);
     spr_values.fillSprite(TFT_BLACK);
-
-    // get setting
-    //Read temperature offset
-    temperature_offset = airSensor.getTemperatureOffset();
-    Serial.print("Current temp offset: ");
-    Serial.print(temperature_offset, 2);
-    Serial.println("C");
 }
 
 void updateDisplay() {
@@ -420,26 +413,26 @@ int checkCo2Level(int level, int co2_ppm) {
     return level;
 }
 
-void incrementValue(int selected, float delta) {
+void incrementValue(int selected, int delta) {
     switch (selected) {
         case 0:
             if (co2_max_ppm < CO2_MAX_RANGE)
-                co2_max_ppm += (int)delta;
+                co2_max_ppm += delta;
             break;
 
         case 1:
             if (co2_warning_ppm < co2_max_ppm)
-                co2_warning_ppm += (int)delta;
+                co2_warning_ppm += delta;
             break;
 
         case 2:
             if (co2_caution_ppm < co2_warning_ppm)
-                co2_caution_ppm += (int)delta;
+                co2_caution_ppm += delta;
             break;
 
         case 3:
-            if (temperature_offset < TEMPERATURE_OFFSET_MAX)
-                temperature_offset += delta;
+            if (temperature_offsetx10 < TEMPERATURE_OFFSET_MAX)
+                temperature_offsetx10 += delta;
             break;
 
         default:
@@ -447,26 +440,26 @@ void incrementValue(int selected, float delta) {
     }
 }
 
-void decrementValue(int selected, float delta) {
+void decrementValue(int selected, int delta) {
     switch (selected) {
         case 0:
             if (co2_warning_ppm < co2_max_ppm)
-                co2_max_ppm -= (int)delta;
+                co2_max_ppm -= delta;
             break;
 
         case 1:
             if (co2_caution_ppm < co2_warning_ppm)
-                co2_warning_ppm -= (int)delta;
+                co2_warning_ppm -= delta;
             break;
 
         case 2:
             if (CO2_MIN_PPM < co2_caution_ppm)
-                co2_caution_ppm -= (int)delta;
+                co2_caution_ppm -= delta;
             break;
 
         case 3:
-            if (TEMPERATURE_OFFSET_MIN < temperature_offset)
-                temperature_offset -= delta;
+            if (TEMPERATURE_OFFSET_MIN < temperature_offsetx10)
+                temperature_offsetx10 -= delta;
             break;
 
         default:
@@ -522,7 +515,8 @@ void showSetting() {
     int selected = 0;
     float delta;
 
-    temperature_offset = airSensor.getTemperatureOffset();
+    float temp_ofs = airSensor.getTemperatureOffset();
+    temperature_offsetx10 = (int)(temp_ofs * 10.0);
 
     while (selected < 5) {
         M5.Lcd.clear();
@@ -560,7 +554,7 @@ void showSetting() {
             delta = TEMPERATURE_SET_DELTA;
         } else
             M5.Lcd.print("  ");
-        M5.Lcd.printf("TempOfs:%5.1f [degC]\n", temperature_offset);
+        M5.Lcd.printf("TempOfs:%5.1f [degC]\n", (float)temperature_offsetx10 / 10.0);
 
         if (selected == 4) {
             M5.Lcd.print("> ");
@@ -611,7 +605,8 @@ void saveSetting() {
     preferences.end();
 
     // set temperature offset in SCD30 non-volatile memory
-    if (airSensor.setTemperatureOffset(temperature_offset)) {
+    float ofs = (float)temperature_offsetx10 / 10.0;
+    if (airSensor.setTemperatureOffset(ofs)) {
         Serial.println("setTemperatureOffset OK");
     } else {
         Serial.println("setTemperatureOffset NG");
