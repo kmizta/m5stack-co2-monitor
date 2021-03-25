@@ -12,8 +12,8 @@
 ## 更新履歴
 | Version |    日付    |                                             更新内容                                             |
 | :-----: | :--------: | :----------------------------------------------------------------------------------------------: |
-|  1.0.1  | 2021/03/25 | Arduino core for the ESP32 1.0.5に更新するとWifiClientSecureでPushbulletに接続できない問題を修正 |
-|  1.0.0  | 2021/2/11  |                                          First Release                                           |
+|   3.1   | 2021/03/25 | Arduino core for the ESP32 1.0.5に更新するとWifiClientSecureでPushbulletに接続できない問題を修正 |
+|   3.0   | 2021/2/11  |                                          First Release                                           |
 
 # 必要なもの
 本キットを使ったCO2モニタの製作には、別途[M5Stack Basic](https://www.switch-science.com/catalog/3647/)が必要です。（別売）  
