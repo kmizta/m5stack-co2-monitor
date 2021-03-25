@@ -105,6 +105,7 @@ bool pushbullet(const String &message) {
     const char *HOST{"api.pushbullet.com"};
     String messagebody = R"({"type": "note", "title": "CO2 Monitor", "body": ")" + message + R"("})";
     uint32_t broadcastingTime{millis()};
+    secureClient.setInsecure();
     if (!secureClient.connect(HOST, 443)) {
         Serial.println("Pushbullet connection failed!");
         return false;
