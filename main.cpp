@@ -470,6 +470,7 @@ void decrementValue(int selected, int delta) {
 
 void calibrateCO2() {
     int selected = 1;
+    int time_count = 0;
     while (1) {
         M5.Lcd.clear();
         M5.Lcd.setCursor(0, 0);
@@ -489,10 +490,12 @@ void calibrateCO2() {
         while (1) {
             M5.update();
             if (M5.BtnA.wasPressed()) {
+                time_count = 0;
                 selected = 0;
                 break;
             }
             if (M5.BtnB.wasPressed()) {
+                time_count = 0;
                 if (selected == 0) {
                     if (airSensor.setForcedRecalibrationFactor(CO2_CALIBRATION_FACTOR)) {
                         M5.Lcd.print("Calibration done!");
@@ -504,16 +507,20 @@ void calibrateCO2() {
                 return;
             }
             if (M5.BtnC.wasPressed()) {
+                time_count = 0;
                 selected = 1;
                 break;
             }
             delay(100);
+            time_count++;
+            if (time_count > 300) return;
         }
     }
 }
 
 void showSetting() {
     int selected = 0;
+    int time_count = 0;
     float delta;
 
     float temp_ofs = airSensor.getTemperatureOffset();
@@ -568,32 +575,40 @@ void showSetting() {
             M5.update();
             if (selected != 4) {
                 if (M5.BtnA.wasPressed()) {
+                    time_count = 0;
                     decrementValue(selected, delta);
                     break;
                 }
                 if (M5.BtnA.pressedFor(600)) {
+                    time_count = 0;
                     decrementValue(selected, delta);
                     break;
                 }
                 if (M5.BtnC.wasPressed()) {
+                    time_count = 0;
                     incrementValue(selected, delta);
                     break;
                 }
                 if (M5.BtnC.pressedFor(600)) {
+                    time_count = 0;
                     incrementValue(selected, delta);
                     break;
                 }
             } else {
                 if (M5.BtnA.wasPressed() || M5.BtnC.wasPressed()) {
+                    time_count = 0;
                     calibrateCO2();
                     break;
                 }
             }
             if (M5.BtnB.wasPressed()) {
+                time_count = 0;
                 selected++;
                 break;
             }
             delay(100);
+            time_count++;
+            if (time_count > 300) return;
         }
     }
 }
