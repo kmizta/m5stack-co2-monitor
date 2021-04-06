@@ -518,6 +518,55 @@ void calibrateCO2() {
     }
 }
 
+float updateSettingDisplay(int selected) {
+    float delta;
+    M5.Lcd.clear();
+    M5.Lcd.setCursor(0, 0);
+
+    M5.Lcd.print("  Setting\n\n");
+
+    if (selected == 0) {
+        M5.Lcd.print("> ");
+        delta = CO2_SET_DELTA;
+    } else
+        M5.Lcd.print("  ");
+    M5.Lcd.printf("Max    :%5d [ppm]\n", co2_max_ppm);
+
+    if (selected == 1) {
+        M5.Lcd.print("> ");
+        delta = CO2_SET_DELTA;
+    } else
+        M5.Lcd.print("  ");
+    M5.Lcd.setTextColor(TFT_RED);
+    M5.Lcd.printf("Warning:%5d [ppm]\n", co2_warning_ppm);
+    M5.Lcd.setTextColor(TFT_WHITE);
+
+    if (selected == 2) {
+        M5.Lcd.print("> ");
+        delta = CO2_SET_DELTA;
+    } else
+        M5.Lcd.print("  ");
+    M5.Lcd.setTextColor(TFT_YELLOW);
+    M5.Lcd.printf("Caution:%5d [ppm]\n", co2_caution_ppm);
+    M5.Lcd.setTextColor(TFT_WHITE);
+
+    if (selected == 3) {
+        M5.Lcd.print("> ");
+        delta = TEMPERATURE_SET_DELTA;
+    } else
+        M5.Lcd.print("  ");
+    M5.Lcd.printf("TempOfs:%5.1f [degC]\n", (float)temperature_offsetx10 / 10.0);
+
+    if (selected == 4) {
+        M5.Lcd.print("> ");
+        delta = 0;
+    } else
+        M5.Lcd.print("  ");
+    M5.Lcd.printf("CO2 Cal. (press Btn A/C)\n");
+
+    return delta;
+}
+
 void showSetting() {
     int selected = 0;
     int time_count = 0;
@@ -526,50 +575,14 @@ void showSetting() {
     float temp_ofs = airSensor.getTemperatureOffset();
     temperature_offsetx10 = (int)(temp_ofs * 10.0);
 
+    delta = updateSettingDisplay(selected);
+    while (M5.BtnA.isPressed() || M5.BtnB.isPressed() || M5.BtnC.isPressed()) {
+        M5.update();
+    }
+    delay(100);
+
     while (selected < 5) {
-        M5.Lcd.clear();
-        M5.Lcd.setCursor(0, 0);
-
-        M5.Lcd.print("  Setting\n\n");
-
-        if (selected == 0) {
-            M5.Lcd.print("> ");
-            delta = CO2_SET_DELTA;
-        } else
-            M5.Lcd.print("  ");
-        M5.Lcd.printf("Max    :%5d [ppm]\n", co2_max_ppm);
-
-        if (selected == 1) {
-            M5.Lcd.print("> ");
-            delta = CO2_SET_DELTA;
-        } else
-            M5.Lcd.print("  ");
-        M5.Lcd.setTextColor(TFT_RED);
-        M5.Lcd.printf("Warning:%5d [ppm]\n", co2_warning_ppm);
-        M5.Lcd.setTextColor(TFT_WHITE);
-
-        if (selected == 2) {
-            M5.Lcd.print("> ");
-            delta = CO2_SET_DELTA;
-        } else
-            M5.Lcd.print("  ");
-        M5.Lcd.setTextColor(TFT_YELLOW);
-        M5.Lcd.printf("Caution:%5d [ppm]\n", co2_caution_ppm);
-        M5.Lcd.setTextColor(TFT_WHITE);
-
-        if (selected == 3) {
-            M5.Lcd.print("> ");
-            delta = TEMPERATURE_SET_DELTA;
-        } else
-            M5.Lcd.print("  ");
-        M5.Lcd.printf("TempOfs:%5.1f [degC]\n", (float)temperature_offsetx10 / 10.0);
-
-        if (selected == 4) {
-            M5.Lcd.print("> ");
-            delta = 0;
-        } else
-            M5.Lcd.print("  ");
-        M5.Lcd.printf("CO2 Cal. (press Btn A/C)\n");
+        delta = updateSettingDisplay(selected);
 
         while (1) {
             M5.update();
@@ -684,7 +697,7 @@ void loop() {
 
     for (int i = 0; i < (float)SENSOR_INTERVAL_S / (float)BTNCHK_INTERVAL_S; ++i) {
         M5.update();
-        if (M5.BtnA.wasPressed() || M5.BtnB.wasPressed() || M5.BtnC.wasPressed()) {
+        if (M5.BtnA.pressedFor(1000) || M5.BtnB.pressedFor(1000) || M5.BtnC.pressedFor(1000)) {
             showSetting();
             saveSetting();
             resetGraphSprite();
