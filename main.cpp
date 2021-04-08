@@ -238,7 +238,6 @@ void setup() {
     M5.Lcd.setCursor(0, 0);
     M5.Lcd.setTextColor(TFT_WHITE, TFT_BLACK);
     M5.Lcd.setTextSize(2);
-    Serial.begin(115200);
 
     // read preferences
     int v;
