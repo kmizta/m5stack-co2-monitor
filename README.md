@@ -68,6 +68,10 @@ M5Stackには本リポジトリのアプリケーション（main.cpp）を書�
 書き込みはvscode+platform.ioを使って動作確認しています。
 
 ※ArduinoIDEを使って書き込む場合は、main.cppをmain.inoに拡張子を変更して開いてください。
+<span style="color: red; ">（2021/04/08追記）
+ArduinoIDEから書き込むと起動しない場合があります。
+原因は調査中ですが、取り急ぎPlatformIOをご利用ください。</span>
+
 
 **バージョン情報（PlatformIOビルドメッセージより）**
 ```
