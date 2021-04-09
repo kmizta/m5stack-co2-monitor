@@ -309,6 +309,7 @@ String pushbullet_apikey("Write your pushbullet api key");
 
 水田かなめ（[@kmizta](https://twitter.com/kmizta)）  
 Twitterやってます。
+本リポジトリの更新などはTwitterにてお知らせします。
 
 [![Twitter URL](https://img.shields.io/twitter/url/https/twitter.com/kmizta.svg?style=social&label=Follow%20%40kmizta)](https://twitter.com/kmizta)
  
