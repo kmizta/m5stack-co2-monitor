@@ -12,6 +12,7 @@
 ## 更新履歴
 | Version |    日付    | 更新内容                                                                                           |
 | :-----: | :--------: | :------------------------------------------------------------------------------------------------- |
+|   3.3   | 2021/04/08 | Arduino core for the ESP32 1.0.5以降＋Arduino IDEで書き込むと正常に起動できない問題を修正          |
 |   3.2   | 2021/04/07 | 長押しで設定画面に遷移するよう修正<br>設定画面で無入力のまま一定時間経つとメイン画面に戻るよう修正 |
 |   3.1   | 2021/03/25 | Arduino core for the ESP32 1.0.5に更新するとWifiClientSecureでPushbulletに接続できない問題を修正   |
 |   3.0   | 2021/2/11  | First Release                                                                                      |
@@ -68,18 +69,15 @@ M5Stackには本リポジトリのアプリケーション（main.cpp）を書�
 書き込みはvscode+platform.ioを使って動作確認しています。
 
 ※ArduinoIDEを使って書き込む場合は、main.cppをmain.inoに拡張子を変更して開いてください。
-<span style="color: red; ">（2021/04/08追記）
-ArduinoIDEから書き込むと起動しない場合があります。
-原因は調査中ですが、取り急ぎPlatformIOをご利用ください。</span>
 
-
-**バージョン情報（PlatformIOビルドメッセージより）**
+**ライブラリ等バージョン情報（PlatformIOビルドメッセージより）**
 ```
-Platform：Espressif 32 (3.2.0) > M5Stack Core ESP32
+PLATFORM: Espressif 32 (3.2.0) > M5Stack Core ESP32
 PACKAGES:
  - framework-arduinoespressif32 3.10006.210326 (1.0.6)
- - tool-esptoolpy 1.30000.201119 (3.0.0)
- - toolchain-xtensa32 2.50200.97 (5.2.0)
+ - tool-esptoolpy 1.30000.201119 (3.0.0) 
+ - tool-mkspiffs 2.230.0 (2.30)
+ - toolchain-xtensa32 2.50200.97 (5.2.0) 
 Dependency Graph
 |-- <M5Stack> 0.3.1
 |   |-- <FS> 1.0
@@ -96,7 +94,7 @@ Dependency Graph
 |   |   |-- <SPI> 1.0
 |-- <Ambient ESP32 ESP8266 lib> 0.0.6
 |   |-- <WiFi> 1.0
-|-- <SparkFun SCD30 Arduino Library> 1.0.10
+|-- <SparkFun SCD30 Arduino Library> 1.0.12
 |   |-- <Wire> 1.0.1
 |-- <Preferences> 1.0
 |-- <WiFi> 1.0
@@ -311,6 +309,7 @@ String pushbullet_apikey("Write your pushbullet api key");
 
 水田かなめ（[@kmizta](https://twitter.com/kmizta)）  
 Twitterやってます。
+本リポジトリの更新などはTwitterにてお知らせします。
 
 [![Twitter URL](https://img.shields.io/twitter/url/https/twitter.com/kmizta.svg?style=social&label=Follow%20%40kmizta)](https://twitter.com/kmizta)
  
