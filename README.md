@@ -1,11 +1,13 @@
 # M5Stack CO2 Monitor
 
-このページはSwitchScienceで委託販売中の「[M5Stack用CO2モニター化キット](https://www.switch-science.com/catalog/6923/)」（以下、本キット）のサポートページです。
+このページはSwitchScienceで委託販売中の「[M5Stack用CO2モニターキット](https://www.switch-science.com/catalog/6923/)」（以下、本キット）のサポートページです。
 
 本キットをM5Stackに接続し、このリポジトリのアプリケーションソフトウェアをM5Stackに書き込むことで、二酸化炭素濃度・温度・湿度を計測、表示することができます。  
 二酸化炭素濃度の時系列はM5Stack上でグラフで確認することができます。
 
 また、[Ambient](https://ambidata.io/)によるログ保存・表示、[Pushbullet](https://www.pushbullet.com/)による濃度レベルに応じたスマホやPCへのプッシュ通知ができます。（Wifi環境、別売りのmicroSDカードが必要）
+
+M5Stack Basic, M5Stack Grayでの動作を確認しています。
 
 <img src="img/kit_main_1000x1000.jpg" width=60%>
 
@@ -72,14 +74,20 @@ M5Stackには本リポジトリのアプリケーション（main.cpp）を書�
 
 **ライブラリ等バージョン情報（PlatformIOビルドメッセージより）**
 ```
-PLATFORM: Espressif 32 (3.2.0) > M5Stack Core ESP32
+PLATFORM: Espressif 32 (3.3.2) > M5Stack Core ESP32
+HARDWARE: ESP32 240MHz, 320KB RAM, 4MB Flash
+DEBUG: Current (esp-prog) External (esp-prog, iot-bus-jtag, jlink, minimodule, olimex-arm-usb-ocd, olimex-arm-usb-ocd-h, olimex-arm-usb-tiny-h, olimex-jtag-tiny, tumpa)
 PACKAGES:
  - framework-arduinoespressif32 3.10006.210326 (1.0.6)
- - tool-esptoolpy 1.30000.201119 (3.0.0) 
+ - tool-esptoolpy 1.30100.210531 (3.1.0)
  - tool-mkspiffs 2.230.0 (2.30)
- - toolchain-xtensa32 2.50200.97 (5.2.0) 
+ - toolchain-xtensa32 2.50200.97 (5.2.0)
+LDF: Library Dependency Finder -> http://bit.ly/configure-pio-ldf
+LDF Modes: Finder ~ chain, Compatibility ~ soft
+Found 32 compatible libraries
+Scanning dependencies...
 Dependency Graph
-|-- <M5Stack> 0.3.1
+|-- <M5Stack> 0.3.6
 |   |-- <FS> 1.0
 |   |-- <SPIFFS> 1.0
 |   |   |-- <FS> 1.0
@@ -92,10 +100,10 @@ Dependency Graph
 |   |-- <SD(esp32)> 1.0.5
 |   |   |-- <FS> 1.0
 |   |   |-- <SPI> 1.0
-|-- <Ambient ESP32 ESP8266 lib> 0.0.6
-|   |-- <WiFi> 1.0
-|-- <SparkFun SCD30 Arduino Library> 1.0.12
+|-- <SparkFun SCD30 Arduino Library> 1.0.14
 |   |-- <Wire> 1.0.1
+|-- <Ambient ESP32 ESP8266 lib> 1.0.1
+|   |-- <WiFi> 1.0
 |-- <Preferences> 1.0
 |-- <WiFi> 1.0
 |-- <WiFiClientSecure> 1.0
@@ -153,7 +161,7 @@ M5Stackに本キットを接続し、電源を入れた状態で屋外または�
 別途温度計などの基準を用意してください。
 基準となる温度と表示に差がある場合は、その差分をTempOfsに設定します。
 
-例えば、温度計の温度が20.0℃、M5Stackで表示される温度が23.0℃の場合はTempOfsに3.0degCを設定します。
+例えば、温度計の温度が20.0℃、M5Stackで表示される温度が23.0℃の場合はTempOfsに3.0degCを設定します。（※出荷時には4.0degCで設定されています）
 
 設定値は再起動後有効になるため、一度電源を落として再起動してください。
 センサ内部でローパスフィルタが入っているため、オフセット値が実際に効いてくるのには時間がかかります。
